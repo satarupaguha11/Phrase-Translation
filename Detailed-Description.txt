@@ -1,0 +1,128 @@
+Phrase Translation
+------------------
+
+Words may not always be the best atomic unit of a sentence. One word in the source language often corresponds to multiple
+words in the target language. A word-based model would break down in these cases. This is the motivation for building a phrase-based model for translation.
+
+Dataset
+-------
+We use the Europarl dataset for training and testing the model. The Europarl parallel corpus is
+extracted from the proceedings of the European Parliament. It includes versions in 21 European
+languages: Romanic (French, Italian, Spanish, Portuguese, Romanian), Germanic (English, Dutch,
+German, Danish, Swedish), Slavik (Bulgarian, Czech, Polish, Slovak, Slovene), Finni-Ugric
+(Finnish, Hungarian, Estonian), Baltic (Latvian, Lithuanian), and Greek.
+We use the English-German language pair for this assignment.
+
+Learning a Phrase Translation Table
+-----------------------------------
+Clearly, the power of phrase-based translation rests on a good phrase translation table. There are
+many ways to acquire such a table. We willpresent here one method in detail.
+
+Steps-
+1. We create a word alignment between each sentence pair of the parallel corpus
+2. We extract phrase pairs that are consistent with this word alignment.
+
+
+Creating Word Alignment
+-----------------------
+We use Giza++ tool to acquire the word alignments from both directions – English to German and
+again from German to English.
+
+Extracting Phrases
+------------------
+We use a phrase extraction algorithm for this step. For each English phrase estart .. eend , the
+minimal phrase of aligned foreign words is identified fstart .. fend. Words in the foreign phrase are
+not allowed to be aligned with English words outside the English phrase. This pair of phrases is
+added, along with additional phrase pairs that include additional unaligned foreign words at the
+edge of the foreign phrase. The conditions for consistency are as follows-
+We call a phrase pair (f , e) consistent with an alignment A, if all f1 , ..., fn in f thatwords have
+alignment points in A have these with words e1, ..., en in e and vice versa:
+(e,f) consistent with A ⇔
+∀ei ∈ e : (ei , fj) ∈ A ⇒ fj ∈ f
+AND
+ ∀fj ∈ f : (ei, fj) ∈ A ⇒ ei ∈ e
+AND
+ ∃ei ∈ e, fj ∈ f ̄ : (ei , fj ) ∈ A
+ 
+Decoding
+--------
+The task of decoding in machine translation is to find the best scoring translation according to these
+formulae. This is a hard problem,since there is an exponential number of choices, given a specific
+input sentence. In fact, it has been shown that the decoding problem for the presented machine
+translation models is NP-complete. In other words, exhaustively examining all possible translations,
+scoring them, and picking the best is computationally too expensive for an input sentence of even
+modest length.
+Given that the decoding problem is too complex to allow an efficient algorithm that is guaranteed to
+find the best translation according to the model, we have to resort to a heuristic search that reduces
+the search space. If it appears early on that a hypothesis is bad, we may want to drop it and ignore
+all future expansions. However, we can never be certain that this hypothesis will not redeem itself
+later and lead to the best overall translation. Herein comes the motivation for coming up with stack
+decoding
+
+Stack Decoding
+--------------
+We would like to organize hypotheses into hypothesis stacks. If the stacks get too large, we prune
+out the worst hypotheses in the stack. One way to organize hypothesis stacks is based on the
+number of foreign words translated. One stack contains all hypotheses that have translated one
+foreign word, another stack contains all hypotheses that have translated two foreign words in their
+path, and so on. The notion of organizing hypotheses in stacks and expanding hypotheses from
+stacks leads to a very compact search heuristic.
+
+Results
+-------
+
+Training
+We trained our model on 20,000 sentence pairs taken from the Europarl dataset.
+
+Testing
+We take 5 sentences English sentences from the training set and 5 from outside the training set out
+of the Europarl dataset. We display the German translations given as output from our system and
+constrast them with the actual German translations of those sentences as present in the Europarl
+dataset.
+
+Testing on 5 sentences from training set:
+1. Source: Thank you very much.
+Expected Output: Vielen Dank.
+System Output: Danken sie sehr.
+2.Source: Madam President I would like to make a few comments.
+Expected Output: Frau Präsidentin gestatten Sie mir einige Bemerkungen .
+System Output: Frau präsident ich würde wie zu machen eine einige.
+3.Source: In the past this Parliament has viewed the social economy as an important potential
+provider of employment.
+Expected Output: Das Parlament sah in der Sozialwirtschaft stets einen wichtigen
+potentiellen Anbieter von Beschäftigungsmöglichkeiten.
+System Output: In der vergangenheit dieser Parlament hat der Sozialen wirtschaft wie eine
+wichtig potenzial Anbieter der.
+4.Source: I understand what you are saying.
+Expected Output: Ich verstehe was Sie meinen.
+Sytem Output: Ich verstehen was Sie sind.
+5.Source: I am not going to mention the length of this report.
+Expected Output: Ich möchte auf den Umfang dieses Berichts hier nicht eingehen .
+Sytem Output: Ich bin nicht nun zu nennen der der dieser.
+
+Testing on 5 sentences from outside training set:
+1. Source: We do not want to build a Europe of cities alone.
+Expected Output: Es kann uns nicht darum gehen, allein ein Europa der Städte zu
+errichten.
+Sytem Output: Wir tun nicht wollen zu aufbau eine Europa der städten.
+2.Source: This report is very good and our Group supports it.
+Expected Output: Unsere Fraktion hÃ¤lt diesen Bericht fÃ1⁄4r sehr gut und befÃ1⁄4rwortet
+ihn.
+Sytem Output: Dieser Bericht ist sehr gute und Unsere Fraktion unterstützt.
+3.Source: This is what we are today asking the Commissioner for.
+Expected Output: Das fordern wir heute vom Herrn Kommissar.
+Sytem Output: Dieser ist was wir sind heute bitten ebenfalls der Herr Kommissar.
+4.Source: We simply have to take this matter very seriously.
+Expected Output: Wir mÃ1⁄4ssen diese Angelegenheit wirklich sehr ernst nehmen.
+Sytem Output: Wir einfach haben zu ergreifen dieser Angelegenheit sehr.
+5.Source: Why are these things important?
+Expected Output: Weshalb sind diese Dinge so wichtig?
+Sytem Output: Warum sind diese Dinge?
+
+Conclusion
+-----------
+From the results, we can conclude that this model performs moderately well if testing is done on
+training data. In fact, the results show significant improvement from the word-based model we
+implemented earlier, and the improvement becames more apparent for longer sentences than for
+shorter ones. However, when this model is tested on data outside the training data, the performance
+degrades considerably because it fails if it cannot find matching phrases in the training data.
